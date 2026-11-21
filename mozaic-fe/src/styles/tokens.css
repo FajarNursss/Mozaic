@@ -1,0 +1,275 @@
+/* ==========================================================================
+   MOZAIC DESIGN TOKENS & UTILITIES
+   Strict Monochrome Editorial Frame + Oversized Pastel Color-Block Sections
+   Dilarang menambah warna baru di luar token ini.
+   Dilarang menggunakan teks abu-abu untuk paragraf; gunakan font-weight.
+   ========================================================================== */
+
+:root {
+  /* Core & Neutral */
+  --color-primary: #000000;
+  --color-on-primary: #ffffff;
+  --color-canvas: #ffffff;
+  --color-surface-soft: #f7f7f5;
+  --color-hairline: #e6e6e6;
+  --color-hairline-soft: #f1f1f1;
+  --color-inverse-canvas: #000000;
+  --color-inverse-ink: #ffffff;
+  --color-overlay-scrim: rgba(0, 0, 0, 0.6);
+
+  /* Pastel Color-Block Surfaces (Pengganti Drop Shadow) */
+  --block-lime: #dceeb1;   /* Cara Kerja, AI Fit & Gap Analysis, FAQ */
+  --block-lilac: #c5b0f4;  /* AI Project Scoper / DeepSeek, Promo Banner */
+  --block-cream: #f4ecd6;  /* Live Profile Preview, Templat Kompetisi, Accent Strip */
+  --block-mint: #c8e6cd;   /* Highlight Peran OPEN / Kolaborasi Aktif */
+  --block-pink: #efd4d4;   /* Catatan / Sorotan Sekunder */
+  --block-coral: #f3c9b6;  /* Callout Aksi Cepat */
+  --block-navy: #1f1d3d;   /* Split-Panel Auth Kanan; teks WAJIB #ffffff */
+
+  /* Semantic & Scarce Accent */
+  --semantic-success: #1ea64a; /* HANYA ikon centang & status Accepted/Match tinggi */
+  --accent-magenta: #ff3d8b;   /* Single-shot promo CTA; maks 1 per halaman */
+
+  /* Radii Scale */
+  --radius-xs: 2px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
+  --radius-pill: 50px;
+  --radius-full: 9999px;
+
+  /* Typography Fonts */
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* Elevations (Shadow-Light) */
+  --shadow-level-0: none;
+  --shadow-level-1: none; /* Dilakukan lewat border hairline 1px solid #e6e6e6 */
+  --shadow-level-2: 0 4px 16px rgba(0, 0, 0, 0.06); /* Dropdown & floating card saja */
+  --shadow-level-3: none; /* Menggunakan background overlay scrim */
+}
+
+/* ==========================================================================
+   Base Reset
+   ========================================================================== */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--color-canvas);
+  color: var(--color-primary);
+  font-family: var(--font-sans);
+  font-weight: 320;
+  line-height: 1.45;
+  letter-spacing: -0.26px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ==========================================================================
+   Typography Classes (Sesuai Tabel Token PRD & 01-DESIGN-SYSTEM)
+   ========================================================================== */
+
+/* Display XL (Hero headline) */
+.font-display-xl {
+  font-family: var(--font-sans);
+  font-size: 48px;
+  font-weight: 340;
+  line-height: 1.00;
+  letter-spacing: -1.72px;
+}
+@media (min-width: 960px) {
+  .font-display-xl {
+    font-size: 86px;
+  }
+}
+
+/* Display LG (Judul pembuka section) */
+.font-display-lg {
+  font-family: var(--font-sans);
+  font-size: 36px;
+  font-weight: 340;
+  line-height: 1.10;
+  letter-spacing: -0.96px;
+}
+@media (min-width: 960px) {
+  .font-display-lg {
+    font-size: 64px;
+  }
+}
+
+/* Headline (Judul blok / halaman) */
+.font-headline {
+  font-family: var(--font-sans);
+  font-size: 22px;
+  font-weight: 540;
+  line-height: 1.35;
+  letter-spacing: -0.26px;
+}
+@media (min-width: 960px) {
+  .font-headline {
+    font-size: 26px;
+  }
+}
+
+/* Subhead (Paragraf pengantar color block) */
+.font-subhead {
+  font-family: var(--font-sans);
+  font-size: 20px;
+  font-weight: 340;
+  line-height: 1.35;
+  letter-spacing: -0.26px;
+}
+@media (min-width: 960px) {
+  .font-subhead {
+    font-size: 26px;
+  }
+}
+
+/* Card Title (Judul kartu proyek & peran) */
+.font-card-title {
+  font-family: var(--font-sans);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.45;
+  letter-spacing: 0px;
+}
+@media (min-width: 960px) {
+  .font-card-title {
+    font-size: 24px;
+  }
+}
+
+/* Body Large */
+.font-body-lg {
+  font-family: var(--font-sans);
+  font-size: 18px;
+  font-weight: 330;
+  line-height: 1.40;
+  letter-spacing: -0.14px;
+}
+@media (min-width: 960px) {
+  .font-body-lg {
+    font-size: 20px;
+  }
+}
+
+/* Body Standard */
+.font-body {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  font-weight: 320;
+  line-height: 1.45;
+  letter-spacing: -0.26px;
+}
+@media (min-width: 960px) {
+  .font-body {
+    font-size: 18px;
+  }
+}
+
+/* Body Small */
+.font-body-sm {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 330;
+  line-height: 1.45;
+  letter-spacing: -0.14px;
+}
+@media (min-width: 960px) {
+  .font-body-sm {
+    font-size: 16px;
+  }
+}
+
+/* Button Typography */
+.font-button {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  font-weight: 480;
+  line-height: 1.40;
+  letter-spacing: -0.10px;
+}
+@media (min-width: 960px) {
+  .font-button {
+    font-size: 18px;
+  }
+}
+
+/* Eyebrow (Uppercase Mono) */
+.font-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.30;
+  letter-spacing: 0.54px;
+  text-transform: uppercase;
+}
+@media (min-width: 960px) {
+  .font-eyebrow {
+    font-size: 14px;
+  }
+}
+
+/* Caption (Uppercase Mono) */
+.font-caption {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.00;
+  letter-spacing: 0.60px;
+  text-transform: uppercase;
+}
+@media (min-width: 960px) {
+  .font-caption {
+    font-size: 12px;
+  }
+}
+
+/* ==========================================================================
+   Strict Elevation & Container Utilities
+   ========================================================================== */
+
+/* Flat Surface (Level 0 - Color Blocks & Footer) */
+.elevation-0 {
+  box-shadow: none;
+  border: none;
+}
+
+/* Hairline Surface (Level 1 - Kartu Proyek, Pelamar, Input) */
+.elevation-1 {
+  border: 1px solid var(--color-hairline);
+  box-shadow: none;
+}
+
+/* Soft Floating (Level 2 - Dropdown & Floating Popover HANYA) */
+.elevation-2 {
+  box-shadow: var(--shadow-level-2);
+  border: 1px solid var(--color-hairline);
+}
+
+/* Max layout container */
+.container-mozaic {
+  width: 100%;
+  max-width: 1280px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 24px;
+  padding-right: 24px;
+}
+@media (min-width: 960px) {
+  .container-mozaic {
+    padding-left: 48px;
+    padding-right: 48px;
+  }
+}
+
+/* Section vertical rhythm: 96px */
+.section-spacer {
+  margin-top: 96px;
+  margin-bottom: 96px;
+}
