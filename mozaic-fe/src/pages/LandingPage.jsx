@@ -1,13 +1,15 @@
 import { useNavigate } from 'react-router-dom';
+import { TiltCard } from '../components/ui/TiltCard';
 
 /**
  * Page 01 — Landing Page (/)
- * Refactored 1:1 mengikuti Gambar 1, 2, 4, 3:
+ * Refactored 1:1 mengikuti Figma Prototype:
  * - Section 1: Hero Monochrome + 3-Card Stack Preview (Gambar 1)
  * - Section Marquee: Continuous Dark Strip (Gambar 1 & 2)
  * - Section 2: Lime Color-Block (#dceeb1) Workflow 3 Langkah (Gambar 2)
- * - Section 3: Lilac Color-Block (#c5b0f4) DeepSeek AI Smart Listing (Gambar 4)
- * - Section 4: Cream Color-Block Banner (#f4ecd6) Mulai Kolaborasi (Gambar 3)
+ * - Section 3: Project Discovery — Proyek Aktif yang Sedang Mencari Peran (Gambar Figma Tambahan)
+ * - Section 4: Lilac Color-Block (#c5b0f4) DeepSeek AI Smart Listing (Gambar 4)
+ * - Section 5: Cream Color-Block Banner (#f4ecd6) Mulai Kolaborasi (Gambar 3)
  *
  * Aturan Ketat:
  * - Dilarang teks abu-abu pudar (text-gray-* / text-slate-*). Semua teks di latar terang wajib #000000.
@@ -77,11 +79,16 @@ export function LandingPage() {
             </div>
           </div>
 
-          {/* Kolom Kanan: Outer Frame + 3 Kartu Visual Stack (Col Span 5) */}
+          {/* Kolom Kanan: Outer Frame + 3 Kartu Visual Stack Miring & Efek Tilt (Col Span 5) */}
           <div className="lg:col-span-5 w-full flex justify-center lg:justify-end">
-            <div className="w-full max-w-[500px] bg-[#f7f7f5] rounded-[28px] sm:rounded-[32px] p-4 sm:p-5 md:p-6 border border-[#e6e6e6] flex flex-col gap-3.5 sm:gap-4">
-              {/* Kartu 1: Cream Block (#f4ecd6) — Profil Kandidat */}
-              <div className="bg-[#f4ecd6] rounded-[20px] p-4 sm:p-5 flex flex-col gap-3">
+            <div className="w-full max-w-[500px] bg-[#f7f7f5] rounded-[28px] sm:rounded-[32px] p-5 sm:p-6 md:p-7 border border-[#e6e6e6] flex flex-col gap-4 sm:gap-5 overflow-visible">
+              {/* Kartu 1: Cream Block (#f4ecd6) — Profil Kandidat (Miring -2deg) */}
+              <TiltCard
+                baseRotation={-2}
+                maxTilt={9}
+                scale={1.03}
+                className="bg-[#f4ecd6] rounded-[20px] p-4 sm:p-5 flex flex-col gap-3"
+              >
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-mono text-[10px] sm:text-[11px] tracking-[0.54px] uppercase text-[#000000] font-normal truncate">
                     FAKULTAS ILMU KOMPUTER • BACKEND
@@ -111,10 +118,15 @@ export function LandingPage() {
                     Product Management
                   </span>
                 </div>
-              </div>
+              </TiltCard>
 
-              {/* Kartu 2: Mint Block (#c8e6cd) — Peran Terbuka */}
-              <div className="bg-[#c8e6cd] rounded-[20px] p-4 sm:p-5 flex flex-col gap-2.5">
+              {/* Kartu 2: Mint Block (#c8e6cd) — Peran Terbuka (Miring +1.8deg) */}
+              <TiltCard
+                baseRotation={1.8}
+                maxTilt={9}
+                scale={1.03}
+                className="bg-[#c8e6cd] rounded-[20px] p-4 sm:p-5 flex flex-col gap-2.5"
+              >
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-mono text-[10px] sm:text-[11px] tracking-[0.54px] uppercase text-[#000000] font-normal truncate">
                     GEMASTIK PPL 2026 • ROLE TERBUKA
@@ -135,16 +147,24 @@ export function LandingPage() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => navigate('/projects/proj-1')}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate('/projects/proj-1');
+                    }}
                     className="self-start sm:self-auto px-4 py-2 rounded-[50px] bg-[#000000] text-[#ffffff] font-sans font-[480] text-[13px] leading-none whitespace-nowrap hover:bg-[#1a1a1a] transition-colors cursor-pointer"
                   >
                     Apply 1-Klik →
                   </button>
                 </div>
-              </div>
+              </TiltCard>
 
-              {/* Kartu 3: Lime Block (#dceeb1) — AI Fit & Gap */}
-              <div className="bg-[#dceeb1] rounded-[20px] p-4 sm:p-5 flex flex-col gap-1.5">
+              {/* Kartu 3: Lime Block (#dceeb1) — AI Fit & Gap (Miring -1.2deg) */}
+              <TiltCard
+                baseRotation={-1.2}
+                maxTilt={9}
+                scale={1.03}
+                className="bg-[#dceeb1] rounded-[20px] p-4 sm:p-5 flex flex-col gap-1.5"
+              >
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-mono text-[10px] sm:text-[11px] tracking-[0.54px] uppercase text-[#000000] font-normal">
                     DEEPSEEK AI FIT & GAP
@@ -156,7 +176,7 @@ export function LandingPage() {
                 <p className="font-sans font-[330] text-[13px] leading-relaxed text-[#000000]">
                   Sinergi Backend & Data/AI siap. Kuota otomatis terkunci saat lamaran diterima.
                 </p>
-              </div>
+              </TiltCard>
             </div>
           </div>
         </div>
@@ -259,7 +279,181 @@ export function LandingPage() {
       <div className="h-16 md:h-24" />
 
       {/* =========================================================================
-          SECTION 3: LILAC COLOR-BLOCK (#c5b0f4) — DEEPSEEK SMART LISTING (GAMBAR 4)
+          SECTION 3: PROJECT DISCOVERY — PROYEK AKTIF (GAMBAR FIGMA TAMBAHAN)
+          ========================================================================= */}
+      <section className="container-mozaic">
+        {/* Header Section: Eyebrow + Title + Link ke Semua Proyek */}
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8 sm:mb-10">
+          <div>
+            <span className="font-mono text-[12px] sm:text-[13px] tracking-[0.54px] uppercase text-[#000000] font-normal block mb-2 sm:mb-3">
+              PROJECT DISCOVERY
+            </span>
+            <h2 className="font-sans font-[700] text-[26px] sm:text-[32px] md:text-[38px] leading-tight text-[#000000]">
+              Proyek aktif yang sedang mencari peran
+            </h2>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate('/explore')}
+            className="font-sans font-[540] text-[15px] sm:text-[16px] text-[#000000] hover:underline cursor-pointer self-start sm:self-auto whitespace-nowrap"
+          >
+            Lihat Semua 34 Proyek →
+          </button>
+        </div>
+
+        {/* 3 Project Cards Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+          {/* Kartu 1: Audit Energi (proj-4) */}
+          <div
+            onClick={() => navigate('/projects/proj-4')}
+            className="bg-[#ffffff] rounded-[20px] p-5 sm:p-6 border border-[#e6e6e6] hover:border-[#000000] transition-colors flex flex-col justify-between cursor-pointer"
+          >
+            <div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="px-3 py-1 rounded-[50px] bg-[#f7f7f5] text-[#000000] border border-[#e6e6e6] font-mono text-[10px] sm:text-[11px] font-bold tracking-[0.54px] uppercase">
+                  CAPSTONE/RISET
+                </span>
+                <span className="font-mono text-[11px] text-[#000000] tracking-[0.54px] uppercase">
+                  1/4 TERISI
+                </span>
+              </div>
+
+              <h3 className="font-sans font-[700] text-[18px] sm:text-[19px] leading-snug text-[#000000] mt-4 mb-2">
+                Audit Energi Otomatis Gedung Fakultas dengan IoT Dashboard
+              </h3>
+
+              <p className="font-sans font-[320] text-[13.5px] leading-relaxed text-[#000000]">
+                Pengembangan sistem monitoring energi gedung teknik secara real-time dengan sensor IoT dan dashboard analitik.
+              </p>
+
+              <div className="mt-5">
+                <span className="font-mono text-[10.5px] tracking-[0.54px] text-[#000000] uppercase block mb-2 font-normal">
+                  BUTUH PERAN:
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  <span className="px-2.5 py-1 rounded-[6px] border border-[#e6e6e6] bg-[#ffffff] font-mono text-[11px] text-[#000000]">
+                    BACKEND
+                  </span>
+                  <span className="px-2.5 py-1 rounded-[6px] border border-[#e6e6e6] bg-[#ffffff] font-mono text-[11px] text-[#000000]">
+                    DATA/AI
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-4 mt-6 border-t border-[#f1f1f1] flex items-center justify-between text-[#000000]">
+              <span className="font-sans font-[330] text-[12.5px]">
+                Siti Rahma · FT
+              </span>
+              <span className="font-sans font-[540] text-[13px] hover:underline">
+                Lihat Detail →
+              </span>
+            </div>
+          </div>
+
+          {/* Kartu 2: TaniLensa (proj-1) */}
+          <div
+            onClick={() => navigate('/projects/proj-1')}
+            className="bg-[#ffffff] rounded-[20px] p-5 sm:p-6 border border-[#e6e6e6] hover:border-[#000000] transition-colors flex flex-col justify-between cursor-pointer"
+          >
+            <div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="px-3 py-1 rounded-[50px] bg-[#f7f7f5] text-[#000000] border border-[#e6e6e6] font-mono text-[10px] sm:text-[11px] font-bold tracking-[0.54px] uppercase">
+                  GEMASTIK
+                </span>
+                <span className="font-mono text-[11px] text-[#000000] tracking-[0.54px] uppercase">
+                  3/4 TERISI
+                </span>
+              </div>
+
+              <h3 className="font-sans font-[700] text-[18px] sm:text-[19px] leading-snug text-[#000000] mt-4 mb-2">
+                TaniLensa: Deteksi Dini Hama Padi Berbasis Computer Vision
+              </h3>
+
+              <p className="font-sans font-[320] text-[13.5px] leading-relaxed text-[#000000]">
+                Pengembangan model AI deteksi hama wereng coklat untuk petani lokal berbasis mobile camera.
+              </p>
+
+              <div className="mt-5">
+                <span className="font-mono text-[10.5px] tracking-[0.54px] text-[#000000] uppercase block mb-2 font-normal">
+                  BUTUH PERAN:
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  <span className="px-2.5 py-1 rounded-[6px] border border-[#e6e6e6] bg-[#ffffff] font-mono text-[11px] text-[#000000]">
+                    BUSINESS/PITCHING
+                  </span>
+                  <span className="px-2.5 py-1 rounded-[6px] border border-[#e6e6e6] bg-[#ffffff] font-mono text-[11px] text-[#000000]">
+                    RESEARCH
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-4 mt-6 border-t border-[#f1f1f1] flex items-center justify-between text-[#000000]">
+              <span className="font-sans font-[330] text-[12.5px]">
+                Fasilkom UI &amp; IPB
+              </span>
+              <span className="font-sans font-[540] text-[13px] hover:underline">
+                Lihat Detail →
+              </span>
+            </div>
+          </div>
+
+          {/* Kartu 3: Sirkula (proj-2) */}
+          <div
+            onClick={() => navigate('/projects/proj-2')}
+            className="bg-[#ffffff] rounded-[20px] p-5 sm:p-6 border border-[#e6e6e6] hover:border-[#000000] transition-colors flex flex-col justify-between cursor-pointer"
+          >
+            <div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="px-3 py-1 rounded-[50px] bg-[#f7f7f5] text-[#000000] border border-[#e6e6e6] font-mono text-[10px] sm:text-[11px] font-bold tracking-[0.54px] uppercase">
+                  PKM
+                </span>
+                <span className="font-mono text-[11px] text-[#000000] tracking-[0.54px] uppercase">
+                  2/3 TERISI
+                </span>
+              </div>
+
+              <h3 className="font-sans font-[700] text-[18px] sm:text-[19px] leading-snug text-[#000000] mt-4 mb-2">
+                Sirkula: Marketplace Bahan Baku Daur Ulang untuk UMKM Kampus
+              </h3>
+
+              <p className="font-sans font-[320] text-[13.5px] leading-relaxed text-[#000000]">
+                Ekosistem sirkular penukaran sisa limbah kain konveksi dan plastik mahasiswa dengan insentif token.
+              </p>
+
+              <div className="mt-5">
+                <span className="font-mono text-[10.5px] tracking-[0.54px] text-[#000000] uppercase block mb-2 font-normal">
+                  BUTUH PERAN:
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  <span className="px-2.5 py-1 rounded-[6px] border border-[#e6e6e6] bg-[#ffffff] font-mono text-[11px] text-[#000000]">
+                    UI/UX DESIGN
+                  </span>
+                  <span className="px-2.5 py-1 rounded-[6px] border border-[#e6e6e6] bg-[#ffffff] font-mono text-[11px] text-[#000000]">
+                    FRONTEND
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-4 mt-6 border-t border-[#f1f1f1] flex items-center justify-between text-[#000000]">
+              <span className="font-sans font-[330] text-[12.5px]">
+                FEB &amp; FSRD ITB
+              </span>
+              <span className="font-sans font-[540] text-[13px] hover:underline">
+                Lihat Detail →
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Ruang putih pemisah antar color-block (96px di desktop, 64px di mobile) */}
+      <div className="h-16 md:h-24" />
+
+      {/* =========================================================================
+          SECTION 4: LILAC COLOR-BLOCK (#c5b0f4) — DEEPSEEK SMART LISTING (GAMBAR 4)
           ========================================================================= */}
       <section className="container-mozaic">
         <div className="w-full bg-[#c5b0f4] rounded-[24px] p-6 sm:p-10 md:p-14 lg:p-16">
@@ -377,7 +571,7 @@ export function LandingPage() {
       <div className="h-16 md:h-24" />
 
       {/* =========================================================================
-          SECTION 4: CREAM COLOR-BLOCK BANNER (#f4ecd6) — MULAI KOLABORASI (GAMBAR 3)
+          SECTION 5: CREAM COLOR-BLOCK BANNER (#f4ecd6) — MULAI KOLABORASI (GAMBAR 3)
           ========================================================================= */}
       <section className="container-mozaic">
         <div className="w-full bg-[#f4ecd6] rounded-[24px] py-12 sm:py-16 md:py-20 px-6 sm:px-12 md:px-16 text-center flex flex-col items-center justify-center">

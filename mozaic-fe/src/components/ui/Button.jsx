@@ -19,7 +19,7 @@ export function Button({
   ...props
 }) {
   const baseStyles =
-    'inline-flex items-center justify-center font-button transition-colors select-none cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2';
+    'relative overflow-hidden inline-flex items-center justify-center font-button transition-colors select-none cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2';
 
   const shapeStyles = 'rounded-[50px]';
 

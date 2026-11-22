@@ -51,44 +51,51 @@ export const mozaicService = {
   },
 
   async getProjects({ query = '', category = '', skills = [] } = {}) {
-    if (USE_MOCK) {
-      let filtered = [...localProjects];
+    if (!USE_MOCK) {
+      try {
+        const params = new URLSearchParams();
+        if (query) params.append('q', query);
+        if (category) params.append('category', category);
+        if (skills.length) params.append('skill', skills.join(','));
 
-      if (category && category !== 'Semua') {
-        filtered = filtered.filter(
-          (p) => p.activity_category.toLowerCase() === category.toLowerCase()
-        );
+        const response = await apiClient.get(`/projects?${params.toString()}`);
+        const apiData = response.data?.data || response.data || [];
+        if (Array.isArray(apiData) && apiData.length > 0) {
+          return apiData;
+        }
+      } catch (err) {
+        console.warn('Backend API getProjects fallback to local:', err);
       }
-
-      if (query.trim()) {
-        const q = query.toLowerCase();
-        filtered = filtered.filter(
-          (p) =>
-            p.title.toLowerCase().includes(q) ||
-            p.description.toLowerCase().includes(q) ||
-            p.leader_faculty.toLowerCase().includes(q) ||
-            p.roles.some((r) => r.role_name.toLowerCase().includes(q))
-        );
-      }
-
-      if (skills && skills.length > 0) {
-        filtered = filtered.filter((p) =>
-          p.roles.some((role) =>
-            role.required_skills.some((s) => skills.includes(s))
-          )
-        );
-      }
-
-      return filtered;
     }
 
-    const params = new URLSearchParams();
-    if (query) params.append('q', query);
-    if (category) params.append('category', category);
-    if (skills.length) params.append('skill', skills.join(','));
+    let filtered = [...localProjects];
 
-    const response = await apiClient.get(`/projects?${params.toString()}`);
-    return response.data;
+    if (category && category !== 'Semua') {
+      filtered = filtered.filter(
+        (p) => p.activity_category.toLowerCase() === category.toLowerCase()
+      );
+    }
+
+    if (query.trim()) {
+      const q = query.toLowerCase();
+      filtered = filtered.filter(
+        (p) =>
+          p.title.toLowerCase().includes(q) ||
+          p.description.toLowerCase().includes(q) ||
+          p.leader_faculty.toLowerCase().includes(q) ||
+          p.roles.some((r) => r.role_name.toLowerCase().includes(q))
+      );
+    }
+
+    if (skills && skills.length > 0) {
+      filtered = filtered.filter((p) =>
+        p.roles.some((role) =>
+          role.required_skills.some((s) => skills.includes(s))
+        )
+      );
+    }
+
+    return filtered;
   },
 
   async getProjectById(id) {
@@ -171,9 +178,37 @@ export const mozaicService = {
       const response = await apiClient.post(
         '/ai/scope',
         { idea: rawIdea, category },
-        { timeout: 5000 }
+        { timeout: 10000 }
       );
-      return { isFallback: false, data: response.data };
+      const res = response.data;
+      const payload = res.data || res;
+
+      return {
+        isFallback: payload.source === 'fallback',
+        fallbackNotice:
+          payload.source === 'fallback'
+            ? 'FALLBACK TEMPLATE ACTIVE — DETERMINISTIC'
+            : null,
+        data: {
+          title:
+            payload.suggested_title ||
+            payload.title ||
+            `Inovasi: ${rawIdea.slice(0, 40)}`,
+          category: payload.suggested_category || category,
+          description: payload.summary || payload.description || rawIdea,
+          roles: (payload.recommended_roles || payload.roles || []).map(
+            (r) => ({
+              role_name: r.role_name,
+              task_description:
+                r.reason ||
+                r.task_description ||
+                'Kontribusi teknis dan perancangan sesuai kebutuhan peran.',
+              required_skills: r.required_skills || [],
+              quota: r.quota || 1,
+            })
+          ),
+        },
+      };
     } catch {
       // Deterministic Fallback saat offline atau timeout > 5000ms
       return {

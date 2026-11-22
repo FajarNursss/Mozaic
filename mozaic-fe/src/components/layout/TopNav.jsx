@@ -121,25 +121,6 @@ export function TopNav({
         <div className="hidden lg:flex items-center gap-3">
           {isLandingPage ? (
             <>
-              {/* Persona indicator if active */}
-              {currentUser && (
-                <button
-                  type="button"
-                  onClick={() => setPersonaDropdownOpen(!personaDropdownOpen)}
-                  className="flex items-center gap-2 px-2.5 py-1 rounded-[50px] border border-[#e6e6e6] bg-[#ffffff] hover:bg-[#f7f7f5] cursor-pointer mr-1"
-                  title="Persona Aktif"
-                >
-                  <InitialAvatar
-                    initials={currentUser.initials}
-                    bgColor={currentUser.avatarColor}
-                    size="sm"
-                  />
-                  <span className="font-sans font-[480] text-[13px] text-[#000000] max-w-[100px] truncate">
-                    {currentUser.name.split(' ')[0]}
-                  </span>
-                </button>
-              )}
-
               {/* Tombol Masuk (Pill Secondary) */}
               <button
                 type="button"
@@ -329,8 +310,8 @@ export function TopNav({
             )}
           </div>
 
-          {/* Mobile Persona Switcher */}
-          {currentUser && (
+          {/* Mobile Persona Switcher (Hanya di Halaman Aplikasi) */}
+          {!isLandingPage && currentUser && (
             <div className="pt-6">
               <p className="font-caption text-[#000000] mb-3">
                 PERSONA AKTIF (SWITCHER DEMO)
