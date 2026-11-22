@@ -42,6 +42,14 @@ export const mozaicService = {
   },
 
   // Projects
+  async getMyProjects(userId) {
+    if (USE_MOCK) {
+      return localProjects.filter((p) => p.leader_id === userId);
+    }
+    const response = await apiClient.get(`/projects?leader_id=${userId}`);
+    return response.data;
+  },
+
   async getProjects({ query = '', category = '', skills = [] } = {}) {
     if (USE_MOCK) {
       let filtered = [...localProjects];
@@ -242,6 +250,19 @@ export const mozaicService = {
   },
 
   // Applications & Quota Lock
+  async hasAppliedToRole(projectId, roleId, userId) {
+    if (USE_MOCK) {
+      return localApplications.some(
+        (a) =>
+          a.project_id === projectId &&
+          a.role_id === roleId &&
+          a.applicant.id === userId
+      );
+    }
+    const apps = await this.getMyApplications(userId);
+    return apps.some((a) => a.project_id === projectId && a.role_id === roleId);
+  },
+
   async getApplicationsForProject(projectId) {
     if (USE_MOCK) {
       return localApplications.filter((a) => a.project_id === projectId);

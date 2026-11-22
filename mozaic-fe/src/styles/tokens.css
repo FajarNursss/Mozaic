@@ -273,3 +273,25 @@ body {
   margin-top: 96px;
   margin-bottom: 96px;
 }
+
+/* ==========================================================================
+   Continuous Marquee Animation
+   ========================================================================== */
+@keyframes marquee-scroll {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee-scroll 30s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
