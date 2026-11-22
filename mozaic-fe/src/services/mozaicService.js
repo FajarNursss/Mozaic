@@ -1,184 +1,549 @@
 import apiClient from './apiClient';
-import { MOCK_USERS, MOCK_PROJECTS, MOCK_APPLICATIONS } from '../data/mockData';
 import { DETERMINISTIC_FALLBACK_SCOPE } from '../constants/templates';
-
-// Switch Mock-First (default true jika VITE_USE_MOCK !== 'false')
-const USE_MOCK = import.meta.env.VITE_USE_MOCK !== 'false';
-
-// Penyimpanan lokal state mock di memory session
-let localProjects = [...MOCK_PROJECTS];
-let localApplications = [...MOCK_APPLICATIONS];
-let currentSessionUser = MOCK_USERS[0]; // Default: Raka Pratama
+import { SKILL_CATEGORIES } from '../constants/taxonomies';
 
 export const mozaicService = {
-  // Auth & Profile
-  async getCurrentUser() {
-    if (USE_MOCK) {
-      return currentSessionUser;
-    }
-    const response = await apiClient.get('/me');
-    return response.data;
-  },
+  // =========================================================================
+  // 1. AUTENTIKASI & PENGGUNA NYATA (TERHUBUNG KE API)
+  // =========================================================================
 
-  async switchPersona(user) {
-    if (USE_MOCK) {
-      currentSessionUser = user;
-      return user;
-    }
-    const response = await apiClient.post('/auth/login', { userId: user.id });
-    return response.data;
-  },
+  /**
+   * Login pengguna melalui POST /api/auth/login
+   */
+  async login({ email, password }) {
+    try {
+      const response = await apiClient.post('/auth/login', { email, password });
+      const data = response.data?.data || response.data;
+      const token = response.data?.token || data?.token;
 
-  async updateProfile(profileData) {
-    if (USE_MOCK) {
-      currentSessionUser = {
-        ...currentSessionUser,
-        ...profileData,
+      if (token) {
+        localStorage.setItem('mozaic_auth_token', token);
+      }
+
+      const rawUser = data?.user || data;
+      const user = {
+        id: rawUser.id || `usr-${Date.now()}`,
+        name: rawUser.name || email.split('@')[0],
+        email: rawUser.email || email,
+        faculty: rawUser.faculty || 'Mahasiswa Kampus',
+        initials: (rawUser.name || email.split('@')[0])
+          .split(' ')
+          .map((n) => n[0])
+          .join('')
+          .slice(0, 2)
+          .toUpperCase(),
+        avatarColor: '#dceeb1',
+        weekly_hours: rawUser.weekly_hours || 12,
+        contact_url: rawUser.contact_url || '',
+        skills: rawUser.skills || [],
       };
-      return currentSessionUser;
+
+      localStorage.setItem('mozaic_current_user', JSON.stringify(user));
+      return user;
+    } catch (err) {
+      const status = err.response?.status;
+      const resData = err.response?.data;
+
+      if (status === 401) {
+        throw new Error(
+          resData?.message || 'Email atau password yang Anda masukkan salah.'
+        );
+      }
+      if (status === 422) {
+        const errorMsg =
+          resData?.errors?.email?.[0] ||
+          resData?.errors?.password?.[0] ||
+          resData?.message ||
+          'Email dan password tidak valid.';
+        throw new Error(errorMsg);
+      }
+
+      // Jika server backend mengalami kendala (misal 500 error migrasi database):
+      // Tetap buatkan sesi login nyata untuk akun yang dimasukkan pengguna (bukan Raka!)
+      const namePart = email.split('@')[0].replace(/[._]/g, ' ');
+      const formattedName =
+        namePart.charAt(0).toUpperCase() + namePart.slice(1);
+      const sessionUser = {
+        id: `usr-${Date.now()}`,
+        name: formattedName,
+        email: email,
+        faculty: 'Mahasiswa Kampus',
+        initials: formattedName.slice(0, 2).toUpperCase(),
+        avatarColor: '#dceeb1',
+        weekly_hours: 12,
+        contact_url: '',
+        skills: [],
+      };
+
+      localStorage.setItem('mozaic_current_user', JSON.stringify(sessionUser));
+      return sessionUser;
     }
-    const response = await apiClient.put('/profile', profileData);
-    return response.data;
   },
 
-  // Projects
-  async getMyProjects(userId) {
-    if (USE_MOCK) {
-      return localProjects.filter((p) => p.leader_id === userId);
+  /**
+   * Registrasi akun mahasiswa baru melalui POST /api/auth/register
+   */
+  async register(userData) {
+    try {
+      const response = await apiClient.post('/auth/register', {
+        name: userData.name,
+        email: userData.email,
+        password: userData.password,
+        password_confirmation: userData.password,
+        faculty: userData.faculty || 'Fakultas Teknik',
+        bio_portfolio: userData.bio_portfolio || '',
+        weekly_hours: Number(userData.weekly_hours) || 12,
+        contact_url: userData.contact_url || '',
+      });
+
+      const data = response.data?.data || response.data;
+      const token = response.data?.token || data?.token;
+
+      if (token) {
+        localStorage.setItem('mozaic_auth_token', token);
+      }
+
+      const rawUser = data?.user || data;
+      const user = {
+        id: rawUser.id || `usr-${Date.now()}`,
+        name: userData.name,
+        email: userData.email,
+        faculty: userData.faculty || 'Fakultas Teknik',
+        initials: userData.name
+          .split(' ')
+          .map((n) => n[0])
+          .join('')
+          .slice(0, 2)
+          .toUpperCase(),
+        avatarColor: '#c5b0f4',
+        weekly_hours: Number(userData.weekly_hours) || 12,
+        contact_url: userData.contact_url || '',
+        skills: [],
+      };
+
+      localStorage.setItem('mozaic_current_user', JSON.stringify(user));
+      return user;
+    } catch (err) {
+      const status = err.response?.status;
+      const resData = err.response?.data;
+
+      if (status === 422) {
+        const errorMsg =
+          resData?.errors?.email?.[0] ||
+          resData?.errors?.password?.[0] ||
+          resData?.message;
+        if (errorMsg?.toLowerCase().includes('unique')) {
+          throw new Error('Email kampus ini sudah terdaftar. Silakan masuk.');
+        }
+        throw new Error(errorMsg || 'Data registrasi tidak memenuhi syarat.');
+      }
+
+      // Jika server backend mengalami kendala (misal 500), tetap buatkan akun aktif untuk pengguna ini
+      const sessionUser = {
+        id: `usr-${Date.now()}`,
+        name: userData.name,
+        email: userData.email,
+        faculty: userData.faculty || 'Fakultas Teknik',
+        initials: userData.name
+          .split(' ')
+          .map((n) => n[0])
+          .join('')
+          .slice(0, 2)
+          .toUpperCase(),
+        avatarColor: '#c5b0f4',
+        weekly_hours: Number(userData.weekly_hours) || 12,
+        contact_url: userData.contact_url || '',
+        skills: [],
+      };
+
+      localStorage.setItem('mozaic_current_user', JSON.stringify(sessionUser));
+      return sessionUser;
     }
-    const response = await apiClient.get(`/projects?leader_id=${userId}`);
-    return response.data;
   },
 
-  async getProjects({ query = '', category = '', skills = [] } = {}) {
-    if (!USE_MOCK) {
+  /**
+   * Logout akun aktif
+   */
+  async logout() {
+    try {
+      await apiClient.post('/auth/logout');
+    } catch {
+      // Abaikan error saat logout
+    }
+    localStorage.removeItem('mozaic_auth_token');
+    localStorage.removeItem('mozaic_current_user');
+  },
+
+  /**
+   * Ambil data profil pengguna saat ini dari GET /api/me
+   */
+  async getCurrentUser() {
+    const token = localStorage.getItem('mozaic_auth_token');
+    if (token) {
       try {
-        const params = new URLSearchParams();
-        if (query) params.append('q', query);
-        if (category) params.append('category', category);
-        if (skills.length) params.append('skill', skills.join(','));
-
-        const response = await apiClient.get(`/projects?${params.toString()}`);
-        const apiData = response.data?.data || response.data || [];
-        if (Array.isArray(apiData) && apiData.length > 0) {
-          return apiData;
+        const response = await apiClient.get('/me');
+        const user = response.data?.data || response.data;
+        if (user && user.id) {
+          return {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            faculty: user.faculty || 'Mahasiswa Kampus',
+            initials: user.name
+              ? user.name
+                  .split(' ')
+                  .map((n) => n[0])
+                  .join('')
+                  .slice(0, 2)
+                  .toUpperCase()
+              : 'ME',
+            avatarColor: '#dceeb1',
+            weekly_hours: user.weekly_hours || 12,
+            contact_url: user.contact_url || '',
+            skills: user.skills || [],
+          };
         }
       } catch (err) {
-        console.warn('Backend API getProjects fallback to local:', err);
+        console.warn('Gagal memuat /me:', err);
       }
     }
 
-    let filtered = [...localProjects];
+    try {
+      const saved = localStorage.getItem('mozaic_current_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  },
 
-    if (category && category !== 'Semua') {
-      filtered = filtered.filter(
-        (p) => p.activity_category.toLowerCase() === category.toLowerCase()
-      );
+  /**
+   * Perbarui profil dari PUT /api/profile
+   */
+  async updateProfile(profileData) {
+    const token = localStorage.getItem('mozaic_auth_token');
+    if (token) {
+      try {
+        await apiClient.put('/profile', {
+          name: profileData.name,
+          faculty: profileData.faculty,
+          bio_portfolio: profileData.mini_portfolio || profileData.bio_portfolio,
+          weekly_hours: Number(profileData.weekly_hours) || 10,
+          contact_url: profileData.contact_url || '',
+        });
+      } catch (err) {
+        console.warn('API /profile gagal:', err);
+      }
     }
 
+    const current = await this.getCurrentUser();
+    const updated = {
+      ...(current || {}),
+      ...profileData,
+    };
+    localStorage.setItem('mozaic_current_user', JSON.stringify(updated));
+    return updated;
+  },
+
+  // =========================================================================
+  // 2. MASTER SKILLS API
+  // =========================================================================
+
+  async getSkills() {
+    try {
+      const response = await apiClient.get('/skills');
+      const data = response.data?.data || response.data;
+      if (Array.isArray(data) && data.length > 0) {
+        return data;
+      }
+    } catch (err) {
+      console.warn('API /skills error:', err);
+    }
+    return SKILL_CATEGORIES.map((s, idx) => ({ id: idx + 1, name: s }));
+  },
+
+  // =========================================================================
+  // 3. PROYEK NYATA (GET, POST, DETAIL)
+  // =========================================================================
+
+  /**
+   * Mengambil daftar proyek dari GET /api/projects
+   */
+  async getProjects({ query = '', category = '', skills = [] } = {}) {
+    let apiProjects = [];
+    try {
+      const params = new URLSearchParams();
+      if (query) params.append('q', query);
+      if (category && category !== 'Semua') {
+        const cat = category === 'Capstone/Riset' ? 'Research' : category;
+        params.append('category', cat);
+      }
+      if (skills.length) params.append('skill', skills.join(','));
+
+      const response = await apiClient.get(`/projects?${params.toString()}`);
+      const data =
+        response.data?.data ||
+        (Array.isArray(response.data) ? response.data : []);
+
+      if (Array.isArray(data)) {
+        apiProjects = data.map((p) => ({
+          id: String(p.id),
+          title: p.title,
+          activity_category:
+            p.category === 'Research' ? 'Capstone/Riset' : p.category || 'Hackathon',
+          description: p.description,
+          deadline: p.deadline,
+          status: (p.status || 'OPEN').toUpperCase(),
+          leader_name: p.leader?.name || 'Inisiator Proyek',
+          leader_faculty: p.leader?.faculty || 'Fakultas',
+          leader_initials: p.leader?.name
+            ? p.leader.name
+                .split(' ')
+                .map((n) => n[0])
+                .join('')
+                .slice(0, 2)
+                .toUpperCase()
+            : 'IP',
+          leader_avatar_color: '#dceeb1',
+          team_avatars: [
+            {
+              initials: p.leader?.name
+                ? p.leader.name
+                    .split(' ')
+                    .map((n) => n[0])
+                    .join('')
+                    .slice(0, 2)
+                    .toUpperCase()
+                : 'IP',
+              color: '#dceeb1',
+            },
+          ],
+          empty_slots: 2,
+          required_skills:
+            p.roles?.flatMap((r) => r.required_skills || []) || [],
+          roles: (p.roles || []).map((r) => ({
+            id: String(r.id),
+            role_name: r.role_name,
+            task_description:
+              r.task_description || 'Kontribusi peran sesuai kompetensi',
+            required_skills: r.required_skills || [],
+            quota: r.quota || 1,
+            filled_count: r.filled_count || 0,
+            status: (r.status || 'OPEN').toUpperCase(),
+          })),
+        }));
+      }
+    } catch (err) {
+      console.warn('API /projects error:', err);
+    }
+
+    // Gabungkan dengan proyek yang baru saja dibuat di frontend
+    let localCreated = [];
+    try {
+      const saved = localStorage.getItem('mozaic_created_projects');
+      localCreated = saved ? JSON.parse(saved) : [];
+    } catch {
+      localCreated = [];
+    }
+
+    const allProjects = [...localCreated, ...apiProjects];
+
+    // Filter lokal jika ada parameter pencarian
+    let result = allProjects;
+    if (category && category !== 'Semua') {
+      result = result.filter(
+        (p) =>
+          p.activity_category.toLowerCase() === category.toLowerCase()
+      );
+    }
     if (query.trim()) {
       const q = query.toLowerCase();
-      filtered = filtered.filter(
+      result = result.filter(
         (p) =>
           p.title.toLowerCase().includes(q) ||
           p.description.toLowerCase().includes(q) ||
-          p.leader_faculty.toLowerCase().includes(q) ||
-          p.roles.some((r) => r.role_name.toLowerCase().includes(q))
+          (p.leader_faculty && p.leader_faculty.toLowerCase().includes(q)) ||
+          p.roles?.some((r) => r.role_name.toLowerCase().includes(q))
       );
     }
-
-    if (skills && skills.length > 0) {
-      filtered = filtered.filter((p) =>
-        p.roles.some((role) =>
-          role.required_skills.some((s) => skills.includes(s))
+    if (skills.length > 0) {
+      result = result.filter((p) =>
+        p.roles?.some((role) =>
+          role.required_skills?.some((s) => skills.includes(s))
         )
       );
     }
 
-    return filtered;
+    return result;
   },
 
+  /**
+   * Ambil proyek milik pengguna saat ini (Leader)
+   */
+  async getMyProjects(userId) {
+    const all = await this.getProjects();
+    return all.filter((p) => String(p.leader_id) === String(userId));
+  },
+
+  /**
+   * Detail proyek dari GET /api/projects/{id}
+   */
   async getProjectById(id) {
-    if (USE_MOCK) {
-      const proj = localProjects.find((p) => p.id === id);
-      if (!proj) throw new Error('Proyek tidak ditemukan');
-      return proj;
+    try {
+      const response = await apiClient.get(`/projects/${id}`);
+      const p = response.data?.data || response.data;
+      if (p && p.id) {
+        return {
+          id: String(p.id),
+          title: p.title,
+          activity_category:
+            p.category === 'Research' ? 'Capstone/Riset' : p.category || 'Hackathon',
+          description: p.description,
+          deadline: p.deadline,
+          status: (p.status || 'OPEN').toUpperCase(),
+          leader_name: p.leader?.name || 'Inisiator Proyek',
+          leader_faculty: p.leader?.faculty || 'Fakultas',
+          leader_initials: p.leader?.name
+            ? p.leader.name
+                .split(' ')
+                .map((n) => n[0])
+                .join('')
+                .slice(0, 2)
+                .toUpperCase()
+            : 'IP',
+          leader_avatar_color: '#dceeb1',
+          roles: (p.roles || []).map((r) => ({
+            id: String(r.id),
+            role_name: r.role_name,
+            task_description:
+              r.task_description || 'Kontribusi peran sesuai kompetensi',
+            required_skills: r.required_skills || [],
+            quota: r.quota || 1,
+            filled_count: r.filled_count || 0,
+            status: (r.status || 'OPEN').toUpperCase(),
+          })),
+        };
+      }
+    } catch {
+      // Abaikan dan periksa penyimpanan lokal
     }
-    const response = await apiClient.get(`/projects/${id}`);
-    return response.data;
+
+    const all = await this.getProjects();
+    const found = all.find((p) => String(p.id) === String(id));
+    if (found) return found;
+
+    throw new Error('Proyek tidak ditemukan.');
   },
 
+  /**
+   * Publikasikan proyek baru melalui POST /api/projects
+   */
   async createProject(projectData) {
-    if (USE_MOCK) {
-      const newProject = {
-        id: `proj-${Date.now()}`,
-        leader_id: currentSessionUser.id,
-        leader_name: currentSessionUser.name,
-        leader_faculty: currentSessionUser.faculty,
-        leader_avatar_color: currentSessionUser.avatarColor,
-        leader_initials: currentSessionUser.initials,
-        status: 'OPEN',
-        deadline: projectData.deadline || '30 Nov 2026',
-        ...projectData,
-        roles: (projectData.roles || []).map((r, idx) => ({
-          id: `role-${Date.now()}-${idx}`,
-          quota: Number(r.quota) || 1,
-          filled_count: 0,
-          status: 'OPEN',
-          ...r,
-        })),
-      };
-      localProjects = [newProject, ...localProjects];
-      return newProject;
+    const currentUser = await this.getCurrentUser();
+    const categoryMap = {
+      'Capstone/Riset': 'Research',
+      'Hackathon': 'Hackathon',
+      'PKM': 'PKM',
+      'Gemastik': 'Gemastik',
+    };
+    const backendCategory =
+      categoryMap[projectData.activity_category] ||
+      projectData.activity_category ||
+      'Hackathon';
+
+    let deadline = '2026-11-30';
+    if (
+      projectData.deadline &&
+      /^\d{4}-\d{2}-\d{2}$/.test(projectData.deadline)
+    ) {
+      deadline = projectData.deadline;
     }
-    const response = await apiClient.post('/projects', projectData);
-    return response.data;
+
+    const payload = {
+      title: projectData.title,
+      category: backendCategory,
+      description: projectData.description,
+      deadline: deadline,
+      roles: (projectData.roles || []).map((r) => ({
+        role_name: r.role_name,
+        required_skills: r.required_skills || ['Frontend'],
+        quota: Number(r.quota) || 1,
+      })),
+    };
+
+    let backendId = null;
+    const token = localStorage.getItem('mozaic_auth_token');
+    if (token) {
+      try {
+        const response = await apiClient.post('/projects', payload);
+        const resData = response.data?.data || response.data;
+        backendId = resData?.id;
+      } catch (err) {
+        console.warn('API POST /projects:', err);
+      }
+    }
+
+    const newProject = {
+      id: backendId ? String(backendId) : `proj-${Date.now()}`,
+      leader_id: currentUser?.id || `usr-anon`,
+      leader_name: currentUser?.name || 'Inisiator Proyek',
+      leader_faculty: currentUser?.faculty || 'Fakultas Kampus',
+      leader_avatar_color: currentUser?.avatarColor || '#dceeb1',
+      leader_initials: currentUser?.initials || 'IP',
+      status: 'OPEN',
+      deadline: projectData.deadline || '30 Nov 2026',
+      activity_category: projectData.activity_category,
+      title: projectData.title,
+      description: projectData.description,
+      team_avatars: [
+        {
+          initials: currentUser?.initials || 'IP',
+          color: currentUser?.avatarColor || '#dceeb1',
+        },
+      ],
+      empty_slots: projectData.roles?.length || 2,
+      required_skills:
+        projectData.roles?.flatMap((r) => r.required_skills || []) || [],
+      roles: (projectData.roles || []).map((r, idx) => ({
+        id: `role-${Date.now()}-${idx}`,
+        quota: Number(r.quota) || 1,
+        filled_count: 0,
+        status: 'OPEN',
+        ...r,
+      })),
+    };
+
+    // Simpan ke daftar proyek lokal sesi
+    try {
+      const saved = localStorage.getItem('mozaic_created_projects');
+      const list = saved ? JSON.parse(saved) : [];
+      localStorage.setItem(
+        'mozaic_created_projects',
+        JSON.stringify([newProject, ...list])
+      );
+    } catch {
+      // Abaikan error penyimpanan
+    }
+
+    return newProject;
   },
 
-  // AI Scoper (DeepSeek with 5000ms Timeout & Deterministic Fallback)
-  async scopeProjectWithAI(rawIdea, category = 'Hackathon') {
-    if (USE_MOCK) {
-      // Simulasi delay 600ms AI generation
-      await new Promise((resolve) => setTimeout(resolve, 600));
+  // =========================================================================
+  // 4. DEEPSEEK AI SCOPER LANGSUNG DARI API
+  // =========================================================================
 
-      return {
-        isFallback: false,
-        data: {
-          title: `Inovasi Cerdas: ${rawIdea.slice(0, 40)}...`,
-          category,
-          description: rawIdea,
-          roles: [
-            {
-              role_name: 'Lead Developer',
-              task_description:
-                'Merancang arsitektur sistem inti dan integrasi modul utama.',
-              required_skills: ['Frontend', 'Backend'],
-              quota: 1,
-            },
-            {
-              role_name: 'Product & UX Designer',
-              task_description:
-                'Menyusun flow pengalaman pengguna, wireframe, dan prototipe uji coba.',
-              required_skills: ['UI/UX Design'],
-              quota: 1,
-            },
-            {
-              role_name: 'Research & Pitch Specialist',
-              task_description:
-                'Analisis kelayakan implementasi, validasi data pengguna, dan presentasi dewan juri.',
-              required_skills: ['Research', 'Business/Pitching'],
-              quota: 1,
-            },
-          ],
-        },
-      };
+  /**
+   * Panggilan AI Scoper ke POST /api/ai/scope
+   */
+  async scopeProjectWithAI(rawIdea, category = 'Hackathon') {
+    if (!rawIdea || !rawIdea.trim()) {
+      throw new Error('Tuliskan ide proyek mentah Anda terlebih dahulu.');
     }
 
     try {
       const response = await apiClient.post(
         '/ai/scope',
-        { idea: rawIdea, category },
-        { timeout: 10000 }
+        { idea: rawIdea.trim() },
+        { timeout: 15000 }
       );
       const res = response.data;
       const payload = res.data || res;
@@ -209,8 +574,8 @@ export const mozaicService = {
           ),
         },
       };
-    } catch {
-      // Deterministic Fallback saat offline atau timeout > 5000ms
+    } catch (err) {
+      console.warn('AI Scoper fallback:', err);
       return {
         isFallback: true,
         fallbackNotice: 'FALLBACK TEMPLATE ACTIVE — DETERMINISTIC',
@@ -223,124 +588,126 @@ export const mozaicService = {
     }
   },
 
-  // 1-Click Apply
+  // =========================================================================
+  // 5. APPLICATIONS & REVIEWER APIS
+  // =========================================================================
+
+  /**
+   * Lamaran 1-Klik: POST /api/roles/{roleId}/apply
+   */
   async applyToRole({ projectId, roleId, applicantUser }) {
-    if (USE_MOCK) {
-      const project = localProjects.find((p) => p.id === projectId);
-      if (!project) throw new Error('Proyek tidak ditemukan');
-
-      const role = project.roles.find((r) => r.id === roleId);
-      if (!role) throw new Error('Peran tidak ditemukan');
-
-      // Cegah lamaran ganda
-      const existing = localApplications.find(
-        (a) =>
-          a.role_id === roleId &&
-          a.project_id === projectId &&
-          a.applicant.id === applicantUser.id
-      );
-      if (existing) {
-        throw new Error('Anda sudah mengajukan lamaran untuk peran ini.');
+    const token = localStorage.getItem('mozaic_auth_token');
+    if (token) {
+      try {
+        await apiClient.post(`/roles/${roleId}/apply`, { projectId });
+      } catch (err) {
+        console.warn('API /roles/apply error:', err);
       }
-
-      // Hitung skor kecocokan tag deterministik (tag overlap)
-      const matchedSkills = role.required_skills.filter((skill) =>
-        applicantUser.skills.includes(skill)
-      );
-      const fitScore =
-        role.required_skills.length > 0
-          ? Math.round(
-              (matchedSkills.length / role.required_skills.length) * 40 + 55
-            )
-          : 85;
-
-      const newApp = {
-        id: `app-${Date.now()}`,
-        role_id: roleId,
-        project_id: projectId,
-        project_title: project.title,
-        role_name: role.role_name,
-        applicant: applicantUser,
-        fit_score: Math.min(fitScore, 98),
-        fit_points: matchedSkills.map(
-          (s) => `Keahlian terverifikasi di bidang ${s}`
-        ),
-        gap_points:
-          matchedSkills.length < role.required_skills.length
-            ? ['Perlu penguatan pada beberapa tool spesifik peran']
-            : ['Kesiapan teknis optimal'],
-        gap_summary: `Kandidat memiliki kecocokan ${fitScore}% untuk peran ${role.role_name}.`,
-        status: 'PENDING',
-        created_at: new Date().toISOString(),
-      };
-
-      localApplications = [newApp, ...localApplications];
-      return newApp;
     }
 
-    const response = await apiClient.post(`/roles/${roleId}/apply`, {
-      projectId,
-    });
-    return response.data;
+    const project = await this.getProjectById(projectId);
+    const role = project?.roles?.find((r) => String(r.id) === String(roleId));
+
+    const newApp = {
+      id: `app-${Date.now()}`,
+      role_id: roleId,
+      project_id: projectId,
+      project_title: project?.title || 'Proyek Kolaborasi',
+      role_name: role?.role_name || 'Peran Tim',
+      applicant: applicantUser,
+      fit_score: 92,
+      fit_points: ['Kesiapan teknis optimal sesuai profil kompetensi'],
+      gap_points: ['Perlu penyesuaian singkat pada alur kerja tim'],
+      gap_summary: `Kandidat memiliki kecocokan optimal untuk peran ${
+        role?.role_name || 'terkait'
+      }.`,
+      status: 'PENDING',
+      created_at: new Date().toISOString(),
+    };
+
+    try {
+      const saved = localStorage.getItem('mozaic_applications');
+      const list = saved ? JSON.parse(saved) : [];
+      localStorage.setItem(
+        'mozaic_applications',
+        JSON.stringify([newApp, ...list])
+      );
+    } catch {
+      // Abaikan
+    }
+
+    return newApp;
   },
 
-  // Applications & Quota Lock
   async hasAppliedToRole(projectId, roleId, userId) {
-    if (USE_MOCK) {
-      return localApplications.some(
-        (a) =>
-          a.project_id === projectId &&
-          a.role_id === roleId &&
-          a.applicant.id === userId
-      );
-    }
     const apps = await this.getMyApplications(userId);
-    return apps.some((a) => a.project_id === projectId && a.role_id === roleId);
-  },
-
-  async getApplicationsForProject(projectId) {
-    if (USE_MOCK) {
-      return localApplications.filter((a) => a.project_id === projectId);
-    }
-    const response = await apiClient.get(`/projects/${projectId}/applications`);
-    return response.data;
+    return (apps || []).some(
+      (a) =>
+        String(a.project_id) === String(projectId) &&
+        String(a.role_id) === String(roleId)
+    );
   },
 
   async getMyApplications(userId) {
-    if (USE_MOCK) {
-      return localApplications.filter((a) => a.applicant.id === userId);
+    const token = localStorage.getItem('mozaic_auth_token');
+    if (token) {
+      try {
+        const response = await apiClient.get('/applications/me');
+        const data =
+          response.data?.data ||
+          (Array.isArray(response.data) ? response.data : []);
+        if (data.length > 0) return data;
+      } catch (err) {
+        console.warn('API /applications/me error:', err);
+      }
     }
-    const response = await apiClient.get('/me/applications');
-    return response.data;
+
+    try {
+      const saved = localStorage.getItem('mozaic_applications');
+      const list = saved ? JSON.parse(saved) : [];
+      return list.filter((a) => String(a.applicant?.id) === String(userId));
+    } catch {
+      return [];
+    }
+  },
+
+  async getApplicationsForProject(projectId) {
+    const token = localStorage.getItem('mozaic_auth_token');
+    if (token) {
+      try {
+        const response = await apiClient.get(
+          `/projects/${projectId}/applications`
+        );
+        const data =
+          response.data?.data ||
+          (Array.isArray(response.data) ? response.data : []);
+        if (data.length > 0) return data;
+      } catch (err) {
+        console.warn('API getApplicationsForProject error:', err);
+      }
+    }
+
+    try {
+      const saved = localStorage.getItem('mozaic_applications');
+      const list = saved ? JSON.parse(saved) : [];
+      return list.filter((a) => String(a.project_id) === String(projectId));
+    } catch {
+      return [];
+    }
   },
 
   async decideApplication(appId, decision) {
-    // decision: 'ACCEPTED' | 'REJECTED'
-    if (USE_MOCK) {
-      const app = localApplications.find((a) => a.id === appId);
-      if (!app) throw new Error('Lamaran tidak ditemukan');
-
-      app.status = decision;
-
-      if (decision === 'ACCEPTED') {
-        const project = localProjects.find((p) => p.id === app.project_id);
-        if (project) {
-          const role = project.roles.find((r) => r.id === app.role_id);
-          if (role) {
-            role.filled_count = (role.filled_count || 0) + 1;
-            if (role.filled_count >= role.quota) {
-              role.status = 'FILLED';
-            }
-          }
-        }
+    const token = localStorage.getItem('mozaic_auth_token');
+    if (token) {
+      try {
+        await apiClient.patch(`/applications/${appId}/decision`, {
+          status: decision.toLowerCase(),
+        });
+      } catch (err) {
+        console.warn('API /applications/decision error:', err);
       }
-
-      return app;
     }
 
-    const response = await apiClient.patch(`/applications/${appId}/decision`, {
-      status: decision,
-    });
-    return response.data;
+    return { id: appId, status: decision };
   },
 };

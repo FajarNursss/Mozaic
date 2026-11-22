@@ -37,25 +37,30 @@ export function WorkspacePage() {
   // Load projects & applications for current active user
   useEffect(() => {
     async function fetchWorkspaceData() {
-      if (!currentUser) return;
+      if (!currentUser) {
+        setLoading(false);
+        return;
+      }
       try {
         setLoading(true);
         // Ambil proyek di mana user aktif adalah leader
         const projects = await mozaicService.getMyProjects(currentUser.id);
-        setMyProjects(projects);
+        const projectList = Array.isArray(projects) ? projects : [];
+        setMyProjects(projectList);
 
         // Hitung jumlah pelamar PENDING untuk tiap proyek leader
         const counts = {};
-        for (const proj of projects) {
+        for (const proj of projectList) {
           const apps = await mozaicService.getApplicationsForProject(proj.id);
-          const pending = apps.filter((a) => a.status === 'PENDING').length;
+          const appsList = Array.isArray(apps) ? apps : [];
+          const pending = appsList.filter((a) => a.status === 'PENDING').length;
           counts[proj.id] = pending;
         }
         setPendingCounts(counts);
 
         // Ambil riwayat lamaran yang diajukan oleh user aktif
         const apps = await mozaicService.getMyApplications(currentUser.id);
-        setMyApplications(apps);
+        setMyApplications(Array.isArray(apps) ? apps : []);
       } catch (err) {
         console.error(err);
       } finally {
@@ -65,6 +70,25 @@ export function WorkspacePage() {
 
     fetchWorkspaceData();
   }, [currentUser]);
+
+  if (!currentUser) {
+    return (
+      <div className="container-mozaic py-16 text-center max-w-md mx-auto">
+        <div className="w-16 h-16 rounded-full bg-[#f7f7f5] border border-[#e6e6e6] flex items-center justify-center mx-auto mb-4">
+          <FolderKanban className="w-8 h-8 text-[#000000] opacity-40" />
+        </div>
+        <h2 className="font-card-title text-[22px] text-[#000000] mb-2">
+          Masuk untuk Mengakses Workspace
+        </h2>
+        <p className="font-body-sm text-[#000000] font-light mb-6">
+          Silakan masuk terlebih dahulu dengan akun kampus Anda untuk mengelola proyek inisiasi dan memantau status lamaran Anda.
+        </p>
+        <Button variant="primary" size="md" onClick={() => navigate('/auth')}>
+          Masuk Sekarang
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="container-mozaic py-10">

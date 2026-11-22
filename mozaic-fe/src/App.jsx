@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { MozaicProvider } from './context/MozaicContext';
 import { useMozaic } from './context/useMozaic';
 import { TopNav } from './components/layout/TopNav';
@@ -13,16 +13,19 @@ import { WorkspacePage } from './pages/WorkspacePage';
 import { ApplicantReviewPage } from './pages/ApplicantReviewPage';
 
 function MainLayout() {
-  const { currentUser, switchPersona, personas } = useMozaic();
+  const { currentUser, logout } = useMozaic();
+  const location = useLocation();
+  const isAuthPage = location.pathname.startsWith('/auth');
 
   return (
     <div className="min-h-screen flex flex-col bg-[#ffffff] text-[#000000]">
-      {/* 56px Sticky Top Navigation Shell */}
-      <TopNav
-        currentUser={currentUser}
-        personas={personas}
-        onSelectPersona={switchPersona}
-      />
+      {/* 56px Sticky Top Navigation Shell (Ditiadakan di halaman Auth) */}
+      {!isAuthPage && (
+        <TopNav
+          currentUser={currentUser}
+          onLogout={logout}
+        />
+      )}
 
       {/* Main Content Area */}
       <main className="flex-1 w-full">
@@ -42,8 +45,8 @@ function MainLayout() {
         </Routes>
       </main>
 
-      {/* Global Footer */}
-      <Footer />
+      {/* Global Footer (Ditiadakan di halaman Auth) */}
+      {!isAuthPage && <Footer />}
     </div>
   );
 }

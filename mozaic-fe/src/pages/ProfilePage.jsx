@@ -1,11 +1,12 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useMozaic } from '../context/useMozaic';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { InitialAvatar } from '../components/ui/InitialAvatar';
 import { ColorBlock } from '../components/ui/ColorBlock';
 import { SKILL_CATEGORIES } from '../constants/taxonomies';
-import { Check, ShieldCheck, Lock, ExternalLink, Save } from 'lucide-react';
+import { Check, ShieldCheck, Lock, ExternalLink, Save, User } from 'lucide-react';
 
 function ProfileForm({ currentUser }) {
   const { updateProfile } = useMozaic();
@@ -435,7 +436,27 @@ function ProfileForm({ currentUser }) {
  * Page 07 — Standardized Student Profile (/profile) — MVP #1
  */
 export function ProfilePage() {
+  const navigate = useNavigate();
   const { currentUser } = useMozaic();
+
+  if (!currentUser) {
+    return (
+      <div className="container-mozaic py-16 text-center max-w-md mx-auto">
+        <div className="w-16 h-16 rounded-full bg-[#f7f7f5] border border-[#e6e6e6] flex items-center justify-center mx-auto mb-4">
+          <User className="w-8 h-8 text-[#000000] opacity-40" />
+        </div>
+        <h2 className="font-card-title text-[22px] text-[#000000] mb-2">
+          Masuk untuk Mengakses Profil
+        </h2>
+        <p className="font-body-sm text-[#000000] font-light mb-6">
+          Masuk atau daftarkan akun kampus Anda untuk melihat dan memperbarui profil kompetensi mahasiswa Anda.
+        </p>
+        <Button variant="primary" size="md" onClick={() => navigate('/auth')}>
+          Masuk Sekarang
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="container-mozaic py-10">
@@ -453,8 +474,7 @@ export function ProfilePage() {
         </p>
       </div>
 
-      {/* Re-mount ProfileForm saat persona aktif berganti */}
-      <ProfileForm key={currentUser?.id || 'default'} currentUser={currentUser} />
+      <ProfileForm key={currentUser.id} currentUser={currentUser} />
     </div>
   );
 }

@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Menu, X, Plus, LogIn } from 'lucide-react';
+import { Menu, X, Plus, LogOut, User, FolderKanban } from 'lucide-react';
 import { MozaicLogo } from '../ui/MozaicLogo';
-import { Button } from '../ui/Button';
 import { InitialAvatar } from '../ui/InitialAvatar';
 
 /**
@@ -10,19 +9,16 @@ import { InitialAvatar } from '../ui/InitialAvatar';
  * Aturan:
  * - Tinggi: 56px (h-[56px]), sticky di atas, z-index 40
  * - Latar #ffffff, border bawah hairline 1px solid #e6e6e6
- * - Di Landing Page (/): Menampilkan persis seperti Gambar 1 (Explore Proyek, AI Scoper, Cara Kerja; Masuk & Mulai Cari Tim)
- * - Di Halaman Lain: Menampilkan navigasi workspace lengkap + persona switcher
+ * - Di Landing Page (/): Menampilkan Explore Proyek, AI Scoper, Cara Kerja, Masuk & Mulai Cari Tim
+ * - Di Halaman Internal: Navigasi Explore, Buat Proyek, Workspace Saya, Profil Saya
+ * - User Menu: Menampilkan profil akun pengguna yang sedang login & tombol Logout nyata (tanpa mock switcher)
  * - Mobile (< 960px): Hamburger overlay yang adaptif
  */
-export function TopNav({
-  currentUser = null,
-  onSelectPersona = () => {},
-  personas = [],
-}) {
+export function TopNav({ currentUser = null, onLogout = () => {} }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [personaDropdownOpen, setPersonaDropdownOpen] = useState(false);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
   const isLandingPage = location.pathname === '/';
 
@@ -36,6 +32,14 @@ export function TopNav({
   const handleNavClick = (path) => {
     navigate(path);
     setMobileMenuOpen(false);
+    setUserDropdownOpen(false);
+  };
+
+  const handleLogout = async () => {
+    setUserDropdownOpen(false);
+    setMobileMenuOpen(false);
+    await onLogout();
+    navigate('/');
   };
 
   const scrollToCaraKerja = () => {
@@ -93,7 +97,7 @@ export function TopNav({
 
         {/* Tengah (Desktop >= 960px): Menu Navigasi untuk Halaman Internal */}
         {!isLandingPage && (
-          <nav className="hidden lg:flex items-center gap-1">
+          <nav className="hidden lg:flex items-center gap-6 h-[56px]">
             {appNavLinks.map((link) => {
               const isActive =
                 location.pathname === link.path ||
@@ -104,10 +108,10 @@ export function TopNav({
                   key={link.path}
                   type="button"
                   onClick={() => handleNavClick(link.path)}
-                  className={`px-3.5 py-1.5 rounded-[50px] font-button text-[15px] transition-colors cursor-pointer ${
+                  className={`h-[56px] flex items-center font-sans text-[14px] transition-colors cursor-pointer ${
                     isActive
-                      ? 'bg-[#000000] text-[#ffffff]'
-                      : 'text-[#000000] hover:bg-[#f7f7f5]'
+                      ? 'font-[540] text-[#000000] border-b-2 border-[#000000]'
+                      : 'font-[400] text-[#000000] border-b-2 border-transparent hover:opacity-70'
                   }`}
                 >
                   {link.label}
@@ -117,125 +121,188 @@ export function TopNav({
           </nav>
         )}
 
-        {/* Kanan: Pill Buttons Desktop */}
+        {/* Kanan: Desktop Pill Buttons / User Profile */}
         <div className="hidden lg:flex items-center gap-3">
           {isLandingPage ? (
             <>
-              {/* Tombol Masuk (Pill Secondary) */}
-              <button
-                type="button"
-                onClick={() => handleNavClick('/auth')}
-                className="px-5 py-2 rounded-[50px] bg-[#ffffff] text-[#000000] border border-[#e6e6e6] font-sans font-[480] text-[14px] leading-none hover:bg-[#f7f7f5] transition-colors cursor-pointer"
-              >
-                Masuk
-              </button>
+              {currentUser ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => handleNavClick('/workspace')}
+                    className="px-5 py-2 rounded-[50px] bg-[#000000] text-[#ffffff] font-sans font-[480] text-[14px] leading-none hover:bg-[#1a1a1a] transition-colors cursor-pointer"
+                  >
+                    Buka Workspace
+                  </button>
+                  {/* User Profile Avatar Popover */}
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                      style={{ backgroundColor: currentUser.avatarColor || '#dceeb1' }}
+                      className="w-8 h-8 rounded-full border border-[#e6e6e6] font-mono text-[11px] font-bold text-[#000000] flex items-center justify-center cursor-pointer hover:opacity-90 transition-opacity"
+                      aria-expanded={userDropdownOpen}
+                      title={currentUser.name}
+                    >
+                      {currentUser.initials || 'U'}
+                    </button>
 
-              {/* Tombol Mulai Cari Tim (Pill Primary Black) */}
-              <button
-                type="button"
-                onClick={() => handleNavClick('/explore')}
-                className="px-5 py-2 rounded-[50px] bg-[#000000] text-[#ffffff] font-sans font-[480] text-[14px] leading-none hover:bg-[#1a1a1a] transition-colors cursor-pointer"
-              >
-                Mulai Cari Tim
-              </button>
+                    {userDropdownOpen && (
+                      <div className="absolute right-0 mt-2 w-64 bg-[#ffffff] elevation-2 rounded-[16px] p-2 z-50 border border-[#e6e6e6]">
+                        <div className="px-3 py-2 border-b border-[#f1f1f1]">
+                          <p className="text-[14px] font-sans font-bold text-[#000000] truncate">
+                            {currentUser.name}
+                          </p>
+                          <p className="font-caption text-[11px] text-[#000000] opacity-70 truncate">
+                            {currentUser.email}
+                          </p>
+                          <p className="font-caption text-[10px] text-[#000000] opacity-60 truncate mt-0.5">
+                            {currentUser.faculty || 'Mahasiswa Kampus'}
+                          </p>
+                        </div>
+
+                        <div className="py-1 flex flex-col gap-1">
+                          <button
+                            type="button"
+                            onClick={() => handleNavClick('/workspace')}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-[8px] text-left hover:bg-[#f7f7f5] transition-colors cursor-pointer"
+                          >
+                            <FolderKanban className="w-4 h-4 text-[#000000]" />
+                            <span className="text-[13px] font-sans text-[#000000]">
+                              Workspace Saya
+                            </span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleNavClick('/profile')}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-[8px] text-left hover:bg-[#f7f7f5] transition-colors cursor-pointer"
+                          >
+                            <User className="w-4 h-4 text-[#000000]" />
+                            <span className="text-[13px] font-sans text-[#000000]">
+                              Profil Saya
+                            </span>
+                          </button>
+                        </div>
+
+                        <div className="pt-1 border-t border-[#f1f1f1]">
+                          <button
+                            type="button"
+                            onClick={handleLogout}
+                            className="w-full flex items-center gap-2 px-3 py-2 rounded-[8px] font-sans text-[12px] text-[#d93025] hover:bg-[#fce8e6] transition-colors cursor-pointer"
+                          >
+                            <LogOut className="w-4 h-4" />
+                            <span>Keluar dari Akun</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => handleNavClick('/auth')}
+                    className="px-5 py-2 rounded-[50px] bg-[#ffffff] text-[#000000] border border-[#e6e6e6] font-sans font-[480] text-[14px] leading-none hover:bg-[#f7f7f5] transition-colors cursor-pointer"
+                  >
+                    Masuk
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleNavClick('/explore')}
+                    className="px-5 py-2 rounded-[50px] bg-[#000000] text-[#ffffff] font-sans font-[480] text-[14px] leading-none hover:bg-[#1a1a1a] transition-colors cursor-pointer"
+                  >
+                    Mulai Cari Tim
+                  </button>
+                </>
+              )}
             </>
           ) : (
             <>
-              {/* Persona Switcher Dropdown for App Pages */}
+              {/* Tombol + Buat Proyek (Black Pill 1:1 Figma) */}
+              <button
+                type="button"
+                onClick={() => handleNavClick('/create')}
+                className="px-4 py-2 rounded-[50px] bg-[#000000] text-[#ffffff] font-sans font-[480] text-[13px] leading-none hover:bg-[#1a1a1a] transition-colors flex items-center gap-1.5 cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Buat Proyek</span>
+              </button>
+
+              {/* User Avatar Circle */}
               {currentUser ? (
                 <div className="relative">
                   <button
                     type="button"
-                    onClick={() => setPersonaDropdownOpen(!personaDropdownOpen)}
-                    className="flex items-center gap-2 px-2.5 py-1 rounded-[50px] border border-[#e6e6e6] bg-[#ffffff] hover:bg-[#f7f7f5] cursor-pointer"
-                    aria-expanded={personaDropdownOpen}
+                    onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                    style={{ backgroundColor: currentUser.avatarColor || '#dceeb1' }}
+                    className="w-8 h-8 rounded-full border border-[#e6e6e6] font-mono text-[11px] font-bold text-[#000000] flex items-center justify-center cursor-pointer hover:opacity-90 transition-opacity"
+                    aria-expanded={userDropdownOpen}
+                    title={`${currentUser.name} (${currentUser.initials})`}
                   >
-                    <InitialAvatar
-                      initials={currentUser.initials}
-                      bgColor={currentUser.avatarColor}
-                      size="sm"
-                    />
-                    <span className="font-button text-[14px] max-w-[120px] truncate text-[#000000]">
-                      {currentUser.name}
-                    </span>
+                    {currentUser.initials || 'U'}
                   </button>
 
-                  {/* Persona Popover */}
-                  {personaDropdownOpen && (
-                    <div className="absolute right-0 mt-2 w-64 bg-[#ffffff] elevation-2 rounded-[16px] p-2 z-50">
+                  {/* Real Authenticated User Popover Menu */}
+                  {userDropdownOpen && (
+                    <div className="absolute right-0 mt-2 w-64 bg-[#ffffff] elevation-2 rounded-[16px] p-2 z-50 border border-[#e6e6e6]">
                       <div className="px-3 py-2 border-b border-[#f1f1f1]">
-                        <p className="font-caption text-[#000000]">
-                          GANTI PERSONA DEMO
+                        <p className="text-[14px] font-sans font-bold text-[#000000] truncate">
+                          {currentUser.name}
+                        </p>
+                        <p className="font-caption text-[11px] text-[#000000] opacity-70 truncate">
+                          {currentUser.email}
+                        </p>
+                        <p className="font-caption text-[10px] text-[#000000] opacity-60 truncate mt-0.5">
+                          {currentUser.faculty || 'Mahasiswa Kampus'}
                         </p>
                       </div>
-                      <div className="py-1 flex flex-col gap-1">
-                        {personas.map((p) => (
-                          <button
-                            key={p.id}
-                            type="button"
-                            onClick={() => {
-                              onSelectPersona(p);
-                              setPersonaDropdownOpen(false);
-                            }}
-                            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-[8px] text-left transition-colors cursor-pointer ${
-                              currentUser.id === p.id
-                                ? 'bg-[#f7f7f5] font-medium'
-                                : 'hover:bg-[#f7f7f5]'
-                            }`}
-                          >
-                            <InitialAvatar
-                              initials={p.initials}
-                              bgColor={p.avatarColor}
-                              size="sm"
-                            />
-                            <div className="min-w-0">
-                              <p className="text-[13px] font-sans font-medium text-[#000000] truncate">
-                                {p.name}
-                              </p>
-                              <p className="font-caption text-[10px] text-[#000000] truncate">
-                                {p.faculty}
-                              </p>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
 
-                      <div className="pt-2 border-t border-[#f1f1f1]">
+                      <div className="py-1 flex flex-col gap-1">
                         <button
                           type="button"
-                          onClick={() => {
-                            setPersonaDropdownOpen(false);
-                            navigate('/auth');
-                          }}
-                          className="w-full flex items-center gap-2 px-3 py-2 rounded-[8px] font-caption text-[11px] text-[#000000] hover:bg-[#f7f7f5] cursor-pointer"
+                          onClick={() => handleNavClick('/workspace')}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-[8px] text-left hover:bg-[#f7f7f5] transition-colors cursor-pointer"
                         >
-                          <LogIn className="w-3.5 h-3.5" />
-                          <span>Masuk dengan Akun Lain (/auth)</span>
+                          <FolderKanban className="w-4 h-4 text-[#000000]" />
+                          <span className="text-[13px] font-sans text-[#000000]">
+                            Workspace Saya
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleNavClick('/profile')}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-[8px] text-left hover:bg-[#f7f7f5] transition-colors cursor-pointer"
+                        >
+                          <User className="w-4 h-4 text-[#000000]" />
+                          <span className="text-[13px] font-sans text-[#000000]">
+                            Profil Saya
+                          </span>
+                        </button>
+                      </div>
+
+                      <div className="pt-1 border-t border-[#f1f1f1]">
+                        <button
+                          type="button"
+                          onClick={handleLogout}
+                          className="w-full flex items-center gap-2 px-3 py-2 rounded-[8px] font-sans text-[12px] text-[#d93025] hover:bg-[#fce8e6] transition-colors cursor-pointer"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          <span>Keluar dari Akun</span>
                         </button>
                       </div>
                     </div>
                   )}
                 </div>
               ) : (
-                <Button
-                  variant="secondary"
-                  size="sm"
+                <button
+                  type="button"
                   onClick={() => handleNavClick('/auth')}
+                  className="px-4 py-2 rounded-[50px] bg-[#ffffff] text-[#000000] border border-[#e6e6e6] font-sans font-[480] text-[13px] leading-none hover:bg-[#f7f7f5] transition-colors cursor-pointer"
                 >
                   Masuk
-                </Button>
+                </button>
               )}
-
-              {/* Quick CTA Pill Button */}
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => handleNavClick('/create')}
-                className="flex items-center gap-1.5"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Buat Proyek</span>
-              </Button>
             </>
           )}
         </div>
@@ -310,62 +377,55 @@ export function TopNav({
             )}
           </div>
 
-          {/* Mobile Persona Switcher (Hanya di Halaman Aplikasi) */}
-          {!isLandingPage && currentUser && (
+          {/* User Info & Actions di Mobile */}
+          {currentUser ? (
             <div className="pt-6">
-              <p className="font-caption text-[#000000] mb-3">
-                PERSONA AKTIF (SWITCHER DEMO)
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                {personas.map((p) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => {
-                      onSelectPersona(p);
-                      setMobileMenuOpen(false);
-                    }}
-                    className={`flex items-center gap-2 p-2.5 rounded-[12px] border text-left cursor-pointer ${
-                      currentUser.id === p.id
-                        ? 'border-[#000000] bg-[#f7f7f5]'
-                        : 'border-[#e6e6e6] bg-[#ffffff]'
-                    }`}
-                  >
-                    <InitialAvatar
-                      initials={p.initials}
-                      bgColor={p.avatarColor}
-                      size="sm"
-                    />
-                    <div className="min-w-0">
-                      <p className="text-[12px] font-sans font-medium text-[#000000] truncate">
-                        {p.name}
-                      </p>
-                      <p className="font-caption text-[10px] text-[#000000] truncate">
-                        {p.initials}
-                      </p>
-                    </div>
-                  </button>
-                ))}
+              <div className="p-4 rounded-[16px] bg-[#f7f7f5] border border-[#e6e6e6] flex items-center gap-3 mb-4">
+                <InitialAvatar
+                  initials={currentUser.initials}
+                  bgColor={currentUser.avatarColor || '#dceeb1'}
+                  size="md"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[14px] font-sans font-bold text-[#000000] truncate">
+                    {currentUser.name}
+                  </p>
+                  <p className="font-caption text-[11px] text-[#000000] opacity-70 truncate">
+                    {currentUser.email}
+                  </p>
+                  <p className="font-caption text-[10px] text-[#000000] opacity-60 truncate">
+                    {currentUser.faculty || 'Mahasiswa Kampus'}
+                  </p>
+                </div>
               </div>
+
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="w-full py-3 px-4 rounded-[50px] text-center font-button text-[14px] text-[#d93025] bg-[#fce8e6] border border-[#f5c2c7] flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Keluar dari Akun</span>
+              </button>
+            </div>
+          ) : (
+            <div className="mt-auto pt-6 flex flex-col gap-3">
+              <button
+                type="button"
+                className="w-full py-3.5 rounded-[50px] bg-[#000000] text-[#ffffff] font-sans font-[480] text-[16px] text-center"
+                onClick={() => handleNavClick('/explore')}
+              >
+                Mulai Cari Tim
+              </button>
+              <button
+                type="button"
+                className="w-full py-3.5 rounded-[50px] bg-[#ffffff] text-[#000000] border border-[#e6e6e6] font-sans font-[480] text-[16px] text-center"
+                onClick={() => handleNavClick('/auth')}
+              >
+                Masuk Akun
+              </button>
             </div>
           )}
-
-          <div className="mt-auto pt-6 flex flex-col gap-3">
-            <button
-              type="button"
-              className="w-full py-3.5 rounded-[50px] bg-[#000000] text-[#ffffff] font-sans font-[480] text-[16px] text-center"
-              onClick={() => handleNavClick('/explore')}
-            >
-              Mulai Cari Tim
-            </button>
-            <button
-              type="button"
-              className="w-full py-3.5 rounded-[50px] bg-[#ffffff] text-[#000000] border border-[#e6e6e6] font-sans font-[480] text-[16px] text-center"
-              onClick={() => handleNavClick('/auth')}
-            >
-              Masuk Akun
-            </button>
-          </div>
         </div>
       )}
     </header>

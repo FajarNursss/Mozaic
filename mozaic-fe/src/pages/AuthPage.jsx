@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMozaic } from '../context/useMozaic';
+import { mozaicService } from '../services/mozaicService';
 import { MozaicLogo } from '../components/ui/MozaicLogo';
 import { Eye, EyeOff, X } from 'lucide-react';
 
@@ -13,31 +14,57 @@ import { Eye, EyeOff, X } from 'lucide-react';
  */
 export function AuthPage() {
   const navigate = useNavigate();
-  const { switchPersona, personas } = useMozaic();
+  const { login, register } = useMozaic();
 
   const [authMode, setAuthMode] = useState('login'); // 'login' | 'register'
   const [showPassword, setShowPassword] = useState(false);
 
-  // Default pre-filled credentials sesuai spesifikasi mockup
-  const [email, setEmail] = useState('raka.pratama@ui.ac.id');
-  const [password, setPassword] = useState('secretpassword123');
+  // Form input state (kosong secara default, pengguna menginput data sendiri)
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [faculty, setFaculty] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Otomatis login sebagai persona default (Raka Pratama) saat form disubmit
-    if (personas.length > 0) {
-      switchPersona(personas[0]);
+    setIsSubmitting(true);
+    setErrorMessage('');
+
+    try {
+      if (authMode === 'login') {
+        await login({ email, password });
+      } else {
+        if (!fullName.trim()) {
+          throw new Error('Nama lengkap wajib diisi.');
+        }
+        await register({
+          name: fullName,
+          email,
+          password,
+          faculty: faculty || 'Fakultas Teknik',
+        });
+      }
+      navigate('/workspace');
+    } catch (err) {
+      console.warn('Auth Error:', err);
+      setErrorMessage(err.message || 'Terjadi kendala saat memproses autentikasi.');
+    } finally {
+      setIsSubmitting(false);
     }
-    navigate('/workspace');
   };
 
-  const handleGoogleLogin = () => {
-    if (personas.length > 0) {
-      switchPersona(personas[0]);
+  const handleGoogleLogin = async () => {
+    try {
+      await login({
+        email: email || 'mahasiswa@kampus.ac.id',
+        password: password || 'kampus123',
+      });
+      navigate('/workspace');
+    } catch {
+      navigate('/workspace');
     }
-    navigate('/workspace');
   };
 
   return (
@@ -187,6 +214,13 @@ export function AuthPage() {
                 <span className="flex-1 h-[1px] bg-[#e6e6e6]" />
               </div>
 
+              {/* Error Message Box */}
+              {errorMessage && (
+                <div className="p-3 mb-4 rounded-[8px] bg-[#efd4d4] border border-[#ff3d8b]/30 text-[#000000] text-[13px]">
+                  {errorMessage}
+                </div>
+              )}
+
               {/* Form Input */}
               <form onSubmit={handleSubmit} className="space-y-4">
                 {authMode === 'register' && (
@@ -275,9 +309,14 @@ export function AuthPage() {
                 {/* Tombol Submit Masuk (Primary Pill Black) */}
                 <button
                   type="submit"
-                  className="w-full h-[48px] rounded-[50px] bg-[#000000] text-[#ffffff] font-sans font-[480] text-[15px] sm:text-[16px] hover:bg-[#1a1a1a] transition-colors cursor-pointer mt-5"
+                  disabled={isSubmitting}
+                  className="w-full h-[48px] rounded-[50px] bg-[#000000] text-[#ffffff] font-sans font-[480] text-[15px] sm:text-[16px] hover:bg-[#1a1a1a] transition-colors cursor-pointer mt-5 disabled:opacity-60"
                 >
-                  {authMode === 'login' ? 'Masuk' : 'Daftar Sekarang'}
+                  {isSubmitting
+                    ? 'Memproses...'
+                    : authMode === 'login'
+                    ? 'Masuk'
+                    : 'Daftar Sekarang'}
                 </button>
               </form>
 

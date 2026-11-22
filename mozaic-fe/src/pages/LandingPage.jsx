@@ -100,7 +100,7 @@ export function LandingPage() {
 
                 <div>
                   <h3 className="font-sans font-[700] text-[20px] sm:text-[22px] leading-tight text-[#000000]">
-                    Raka Pratama
+                    Kandidat Talenta Kampus
                   </h3>
                   <p className="font-sans font-[330] text-[13px] text-[#000000] mt-0.5">
                     12 jam/minggu • WhatsApp Terverifikasi
